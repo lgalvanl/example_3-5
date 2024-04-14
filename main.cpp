@@ -5,13 +5,13 @@
 
 //=====[Defines]===============================================================
 
-#define NUMBER_OF_KEYS                           4
-#define BLINKING_TIME_GAS_ALARM               1000
-#define BLINKING_TIME_OVER_TEMP_ALARM          500
-#define BLINKING_TIME_GAS_AND_OVER_TEMP_ALARM  100
-#define NUMBER_OF_AVG_SAMPLES                   100
-#define OVER_TEMP_LEVEL                         50
-#define TIME_INCREMENT_MS                       10
+#define NUMBER_OF_KEYS                           4  //cantidad de pulsadores que se usaran
+#define BLINKING_TIME_GAS_ALARM               1000  //Duracion del blink en la alarma si se detecta gas
+#define BLINKING_TIME_OVER_TEMP_ALARM          500  //Duracion del blink en la alarma si se detecta sobretemperatura
+#define BLINKING_TIME_GAS_AND_OVER_TEMP_ALARM  100  //Duracion del blink en la alarma si se detecta gas y a la vez sobretemperatura
+#define NUMBER_OF_AVG_SAMPLES                   100 //Numero de muestras que se usan al trabajar con el potenciometro
+#define OVER_TEMP_LEVEL                         50  // Valor a partir del cual se considera sobretemperatura
+#define TIME_INCREMENT_MS                       10  //Cantidad de incrementos que habra (evita codigo muy bloqueante)
 
 //=====[Declaration and initialization of public global objects]===============
 
@@ -35,14 +35,14 @@ AnalogIn potentiometer(A0);
 AnalogIn lm35(A1);
 
 //=====[Declaration and initialization of public global variables]=============
-
+//Se inicializa la placa con la alarma apagada, sin deteccion de sobretemperatura y con ningun intento de codigo incorrecto
 bool alarmState    = OFF;
 bool incorrectCode = false;
 bool overTempDetector = OFF;
 
 int numberOfIncorrectCodes = 0;
 int buttonBeingCompared    = 0;
-int codeSequence[NUMBER_OF_KEYS]   = { 1, 1, 0, 0 };
+int codeSequence[NUMBER_OF_KEYS]   = { 1, 1, 0, 0 }; //Se elige la siguiente secuencia de teclas como clave para apagar la alarma
 int buttonsPressed[NUMBER_OF_KEYS] = { 0, 0, 0, 0 };
 int accumulatedTimeAlarm = 0;
 
@@ -70,10 +70,10 @@ float celsiusToFahrenheit( float tempInCelsiusDegrees );
 float analogReadingScaledWithTheLM35Formula( float analogReading );
 
 //=====[Main function, the program entry point after power on or reset]========
-
+// En el main se inicializan los puertos de entrada y de salida, en un loop infinito 
 int main()
 {
-    inputsInit();
+    inputsInit(); 
     outputsInit();
     while (true) {
         alarmActivationUpdate();
@@ -84,7 +84,7 @@ int main()
 }
 
 //=====[Implementations of public functions]===================================
-
+//Se configuran los pulsadores como Pull down
 void inputsInit()
 {
     alarmTestButton.mode(PullDown);
@@ -95,14 +95,14 @@ void inputsInit()
     sirenPin.mode(OpenDrain);
     sirenPin.input();
 }
-
+//El sistema inicia con la alarma apagada
 void outputsInit()
 {
     alarmLed = OFF;
     incorrectCodeLed = OFF;
     systemBlockedLed = OFF;
 }
-
+//Funcion que analiza a los pines conectados a LM35 y al MQ-2, y dependiendo del caso prende o no a la alarma
 void alarmActivationUpdate()
 {
     static int lm35SampleIndex = 0;
@@ -168,7 +168,7 @@ void alarmActivationUpdate()
         sirenPin.input();                                  
     }
 }
-
+//Funcion que maneja la entrada de claves para desactivar a la alarma
 void alarmDeactivationUpdate()
 {
     if ( numberOfIncorrectCodes < 5 ) {
@@ -192,7 +192,10 @@ void alarmDeactivationUpdate()
         systemBlockedLed = ON;
     }
 }
-
+//Funcion donde se maneja la comunicacion en serie con el teclado de la PC, aqui se mostrará el estado
+// de los sensores y se podrá apagar la alarma introduciendo el codigo,
+//Ademas de poder cambiar la clave que desactiva la alarma
+//Todo dependendiendo de la tecla que el usuario presione
 void uartTask()
 {
     char receivedChar = '\0';
@@ -328,6 +331,7 @@ void uartTask()
         }
     }
 }
+//Funcion que muestra por consola todas las opciones que tiene el usuario
 
 void availableCommands()
 {
@@ -341,7 +345,7 @@ void availableCommands()
     uartUsb.write( "Press 'f' or 'F' to get lm35 reading in Fahrenheit\r\n", 52 );
     uartUsb.write( "Press 'c' or 'C' to get lm35 reading in Celsius\r\n\r\n", 51 );
 }
-
+//Funcion para ver si el codigo entrante es la clave correcta para apagar la alarma
 bool areEqual()
 {
     int i;
@@ -354,7 +358,7 @@ bool areEqual()
 
     return true;
 }
-
+//Funciones para convertir el valor leido del potenciometro en unidades Grados o Farenheit
 float analogReadingScaledWithTheLM35Formula( float analogReading )
 {
     return ( analogReading * 3.3 / 0.01 );
