@@ -1,3 +1,4 @@
+// Archivo del tipo .h: Aqui se presentan las funciones (como delay(ms)) y los estados que se utilizaran 
 //=====[#include guards - begin]===============================================
 
 #ifndef _ARM_BOOK_LIB_H_
