@@ -13,12 +13,13 @@
 #define OVER_TEMP_LEVEL                         50  // Valor a partir del cual se considera sobretemperatura
 #define TIME_INCREMENT_MS                       10  //Cantidad de incrementos que habra (evita codigo muy bloqueante)
 
-#define MASK_PORTD                             240  //En binario 0000000011110000
+#define MASK_PORTD                             240  //NUEVO En binario 0000000011110000
+#define MASK_VAL_LEIDO                           2  //NUEVO 
 //=====[Declaration and initialization of public global objects]===============
 //PARA LOS PULSADORES EN VEZ DE DIGITALIN SE PUEDE LEER TODO EL GRUPO JUNTO CON PortIn
 //PARA 
 DigitalIn enterButton(BUTTON1);
-PortIn Buttons(PortD,MASK_PORTD); 
+PortIn Buttons(PortD,MASK_PORTD);  //NUEVO
 DigitalIn alarmTestButton(D2);
 DigitalIn mq2(PE_12);
 //LOS LEDS no ESTAN EN EL MISMO PUERTO (PA5,PB0,PB7)?
@@ -39,13 +40,15 @@ bool alarmState    = OFF;
 bool incorrectCode = false;
 bool overTempDetector = OFF;
 
+
 int numberOfIncorrectCodes = 0;
 int buttonBeingCompared    = 0;
 int codeSequence[NUMBER_OF_KEYS]   = { 1, 1, 0, 0 }; //Se elige la siguiente secuencia de teclas como clave para apagar la alarma
-int code_sequence = 12 // en binario   1  1  0  0
+int code_sequence = 12 //NUEVO  en binario   1  1  0  0
 int buttonsPressed[NUMBER_OF_KEYS] = { 0, 0, 0, 0 };
+int Val_leido_teclas = 0 // 0 0 0 0 
 int accumulatedTimeAlarm = 0;
-
+int aux_mask = 3
 bool gasDetectorState          = OFF;
 bool overTempDetectorState     = OFF;
 
@@ -166,17 +169,14 @@ void alarmActivationUpdate()                          //NO SE CAMBIO!!!!
     }
 }
 //Funcion que maneja la entrada de claves para desactivar a la alarma
-void alarmDeactivationUpdate()                     //¡¡¡¡CAMBIAR!!!!!
+void alarmDeactivationUpdate()                     //SE CAMBIO
 {
     if ( numberOfIncorrectCodes < 5 ) {
-        if ( Buttons && code_sequence ) {
+        if ( Buttons == code_sequence && !enterButton) {
             incorrectCodeLed = OFF;
         }
         if ( enterButton && !incorrectCodeLed && alarmState ) {
-            buttonsPressed[0] = aButton;
-            buttonsPressed[1] = bButton;
-            buttonsPressed[2] = cButton;
-            buttonsPressed[3] = dButton;
+            Buttons_Presionados = Buttons.read() //NUEVO
             if ( areEqual() ) {
                 alarmState = OFF;
                 numberOfIncorrectCodes = 0;
@@ -237,24 +237,21 @@ void uartTask()
             uartUsb.write( "then '0', and finally '0'\r\n\r\n", 29 );
 
             incorrectCode = false;
+//1  1  0  0
 
-            for ( buttonBeingCompared = 0;
+            for ( buttonBeingCompared = 0;                 //CAMBIAR ESTO
                   buttonBeingCompared < NUMBER_OF_KEYS;
                   buttonBeingCompared++) {
 
                 uartUsb.read( &receivedChar, 1 );
                 uartUsb.write( "*", 1 );
-
-                if ( receivedChar == '1' ) {
-                    if ( codeSequence[buttonBeingCompared] != 1 ) {
-                        incorrectCode = true;
-                    }
-                } else if ( receivedChar == '0' ) {
-                    if ( codeSequence[buttonBeingCompared] != 0 ) {
-                        incorrectCode = true;
-                    }
-                } else {
+                Val_leido_teclas = receivedChar << MASK_VAL_LEIDO*aux_mask;
+                aux_mask--;
+                }
+                if(val_leido_teclas != code_sequence){
                     incorrectCode = true;
+                } else {
+                    incorrectCode = false;
                 }
             }
 
@@ -287,11 +284,12 @@ void uartTask()
 
                 uartUsb.read( &receivedChar, 1 );
                 uartUsb.write( "*", 1 );
-
                 if ( receivedChar == '1' ) {
-                    codeSequence[buttonBeingCompared] = 1;
+                    code_sequence = 1 << MASK_VAL_LEIDO*aux_mask;
+                aux_mask--;
                 } else if ( receivedChar == '0' ) {
-                    codeSequence[buttonBeingCompared] = 0;
+                    code_sequence = 0 << MASK_VAL_LEIDO*aux_mask;
+                aux_mask--;
                 }
             }
 
@@ -327,7 +325,7 @@ void uartTask()
 
         }
     }
-}
+
 //Funcion que muestra por consola todas las opciones que tiene el usuario
 
 void availableCommands()
@@ -343,16 +341,11 @@ void availableCommands()
     uartUsb.write( "Press 'c' or 'C' to get lm35 reading in Celsius\r\n\r\n", 51 );
 }
 //Funcion para ver si el codigo entrante es la clave correcta para apagar la alarma
-bool areEqual()
+bool areEqual()              //SE CAMBIO
 {
-    int i;
-
-    for (i = 0; i < NUMBER_OF_KEYS; i++) {
-        if (codeSequence[i] != buttonsPressed[i]) {
+        if (Buttons_Presionados != code_sequence) {
             return false;
         }
-    }
-
     return true;
 }
 //Funciones para convertir el valor leido del potenciometro en unidades Grados o Farenheit
