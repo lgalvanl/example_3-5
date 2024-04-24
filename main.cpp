@@ -14,8 +14,7 @@
 #define TIME_INCREMENT_MS                       10  //Cantidad de incrementos que habra (evita codigo muy bloqueante)
 
 //=====[Declaration and initialization of public global objects]===============
-//PARA LOS PULSADORES EN VEZ DE DIGITALIN SE PUEDE LEER TODO EL GRUPO JUNTO CON PortIn
-//PARA 
+
 DigitalIn enterButton(BUTTON1);
 DigitalIn alarmTestButton(D2);
 DigitalIn aButton(D4);
@@ -23,7 +22,7 @@ DigitalIn bButton(D5);
 DigitalIn cButton(D6);
 DigitalIn dButton(D7);
 DigitalIn mq2(PE_12);
-//LOS LEDS ESTAN EN EL MISMO PUERTO (PA5,PB0,PB7)
+
 DigitalOut alarmLed(LED1);
 DigitalOut incorrectCodeLed(LED3);
 DigitalOut systemBlockedLed(LED2);
