@@ -21,7 +21,7 @@ DigitalIn aButton(D4); // cuarto pin desde arriba
 DigitalIn bButton(D5); //tercer pin desde arriba
 DigitalIn cButton(D6); //segundo pin desde arriba
 DigitalIn dButton(D7); //primer pin desde arriba
-DigitalIn mq2(PE_12);  //quinto pin desde abajo
+DigitalIn mq2(PE_12);  //quinto pin desde abajo (no hay nada conectado)
 
 DigitalOut alarmLed(LED1);
 DigitalOut incorrectCodeLed(LED3);
@@ -54,10 +54,7 @@ float lm35ReadingsAverage  = 0.0;
 float lm35ReadingsSum      = 0.0;
 float lm35ReadingsArray[NUMBER_OF_AVG_SAMPLES];
 float lm35TempC            = 0.0;
-//#define BUS_IN
-#define DIGITAL_IN
 
-#ifdef DIGITAL_IN
 //=====[Declarations (prototypes) of public functions]=========================
 
 void inputsInit();
@@ -86,7 +83,10 @@ int main()
         //printf("%d\n", aButton.read());
     }
 }
+//#define BUS_IN
+#define DIGITAL_IN
 
+#ifdef DIGITAL_IN
 //=====[Implementations of public functions]===================================
 //Se configuran los pulsadores como Pull down
 void inputsInit()
@@ -379,78 +379,12 @@ float celsiusToFahrenheit( float tempInCelsiusDegrees )
 #endif
 
 #ifdef BUS_IN
-DigitalIn enterButton(BUTTON1);
-DigitalIn alarmTestButton(D2);
+
 BusIn Buttons(PF_13,PE_9,PE_11,PF_14);  //   (1p)
-DigitalIn mq2(PE_12);
 
 BusOut Leds(LED1,LED2,LED3); //  (5p)
-//DigitalOut alarmLed(LED1);
-//DigitalOut incorrectCodeLed(LED3);
-//DigitalOut systemBlockedLed(LED2);
 
-DigitalInOut sirenPin(PE_10);
 
-UnbufferedSerial uartUsb(USBTX, USBRX, 115200);
-
-AnalogIn potentiometer(A0);
-AnalogIn lm35(A1);
-
-//=====[Declaration and initialization of public global variables]=============
-//Se inicializa la placa con la alarma apagada, sin deteccion de sobretemperatura y con ningun intento de codigo incorrecto
-bool alarmState    = OFF;
-bool incorrectCode = false;
-bool overTempDetector = OFF;
-
-int numberOfIncorrectCodes = 0;
-int buttonBeingCompared    = 0;
-int codeSequence[NUMBER_OF_KEYS]   = { 1, 1, 0, 0 }; //Se elige la siguiente secuencia de teclas como clave para apagar la alarma
-int buttonsPressed[NUMBER_OF_KEYS] = { 0, 0, 0, 0 };
-int accumulatedTimeAlarm = 0;
-
-bool gasDetectorState          = OFF;
-bool overTempDetectorState     = OFF;
-
-float potentiometerReading = 0.0;
-float lm35ReadingsAverage  = 0.0;
-float lm35ReadingsSum      = 0.0;
-float lm35ReadingsArray[NUMBER_OF_AVG_SAMPLES];
-float lm35TempC            = 0.0;
-
-//=====[Declarations (prototypes) of public functions]=========================
-
-void inputsInit();
-void outputsInit();
-
-void alarmActivationUpdate();
-void alarmDeactivationUpdate();
-
-void uartTask();
-void availableCommands();
-bool areEqual();
-float celsiusToFahrenheit( float tempInCelsiusDegrees );
-float analogReadingScaledWithTheLM35Formula( float analogReading );
-
-//=====[Main function, the program entry point after power on or reset]========
-// En el main se inicializan los puertos de entrada y de salida, en un loop infinito 
-int main()
-{
-    inputsInit(); 
-    outputsInit();
-    while (true) {
-        alarmActivationUpdate();
-        alarmDeactivationUpdate();
-        uartTask();
-        delay(TIME_INCREMENT_MS);
-        printf("El valor del boton A es: %d\n", buttons[3]);
-        printf("El valor del boton B es: %d\n", buttons[2]);
-        printf("El valor del boton C es: %d\n", buttons[1]);
-        printf("El valor del boton D es: %d\n", buttons[0]);
-        printf("El valor de AlarmLed es: %d\n", Leds[0]);
-        printf("El valor de IncorrectCodeLed es: %d\n", Leds[1]);
-        printf("El valor de SystemBlockedCodeLed es: %d\n", Leds[2]);
-    }
-}
 
 //=====[Implementations of public functions]===================================
 //Se configuran los pulsadores como Pull down
@@ -459,6 +393,9 @@ void inputsInit()
     alarmTestButton.mode(PullDown);
     Buttons.mode(PullDown); //     (2p)
     sirenPin.mode(OpenDrain);
+     mq2.mode(PullUp); //Como no tenemos el mq2, de esta 
+    //manera nos aseguramos que en el pin se lea un 1 en todo momento
+    //por lo que no se activa la alarma por deteccion de gas
     sirenPin.input();
 }
 //El sistema inicia con la alarma apagada
